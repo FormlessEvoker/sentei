@@ -2,7 +2,7 @@
 
 Sentei prunes locally saved web pages and converts their meaningful content into clean GitHub-Flavored Markdown using Nokogiri and Pandoc.
 
-**Status:** Cairn 1, the conversion spine. Sentei converts the complete `<body>` of a local HTML document to Markdown. Extraction, cleanup, and the remaining options arrive in later cairns (see [PLAN.md](PLAN.md)). The v0.1.0 prototype remains available on `main` and as the `v0.1.0` tag.
+**Status:** Cairn 2, safe input and output. Sentei converts the complete `<body>` of a local HTML document to Markdown, with bounded input and atomic, no-clobber file output. Extraction, cleanup, and the remaining options arrive in later cairns (see [PLAN.md](PLAN.md)). The v0.1.0 prototype remains available on `main` and as the `v0.1.0` tag.
 
 Sentei processes files provided by you locally. It does not fetch URLs, load remote assets, execute embedded content, or send content to external services. Pandoc runs with `--sandbox`, so it cannot read files or access the network either.
 
@@ -25,12 +25,20 @@ bundle install
 ```sh
 bin/sentei saved-page.html > page.md
 bin/sentei - < saved-page.html > page.md
+bin/sentei --output page.md saved-page.html
+bin/sentei --output page.md --force saved-page.html
 ```
 
 Markdown is written to standard output with ATX headings, fenced code blocks, and unwrapped lines.
 
+Input larger than **10 MiB** is rejected; at most that much is read, so oversized input cannot exhaust memory. Real saved pages are normally far smaller.
+
+With `--output`, Markdown is written to a temporary file in the destination directory and moved into place atomically, so the destination is never left partially written and temporary files are removed on failure. An existing destination is never replaced unless `--force` is given, and the check is race-free: if another process creates the file during conversion, Sentei refuses rather than overwriting it. Sentei also refuses to replace its own input file. Paths may contain spaces. Nothing is written to standard output when `--output` is used.
+
 | Option | Meaning |
 |---|---|
+| `-o`, `--output PATH` | Write Markdown to `PATH` instead of standard output |
+| `--force` | Allow `--output` to replace an existing file (requires `--output`) |
 | `-h`, `--help` | Show help |
 | `-v`, `--version` | Show version |
 
@@ -41,8 +49,10 @@ Input is read as UTF-8 when it is valid UTF-8; otherwise the encoding declared b
 | Status | Meaning |
 |---:|---|
 | `0` | Conversion succeeded |
-| `1` | Invalid arguments or input (missing, unreadable, or empty) |
+| `1` | Invalid arguments or input (missing, unreadable, empty, or oversized) |
+| `2` | Extraction produced no usable content (reserved; arrives with extraction in a later cairn) |
 | `3` | Nokogiri or Pandoc is unavailable, or Pandoc failed |
+| `4` | Output could not be written safely (existing file without `--force`, missing or unwritable directory, write failure) |
 
 Error messages never include document content.
 

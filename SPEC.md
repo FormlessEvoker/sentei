@@ -44,7 +44,7 @@ Invalid selectors, missing files, empty input, ambiguous selector matches, and u
 
 ## Processing pipeline
 
-1. Read input with a bounded size and detect invalid or empty content.
+1. Read input with a bounded size (maximum 10 MiB) and detect invalid or empty content.
 2. Parse as HTML without executing scripts or resolving external resources.
 3. Remove `head`, `script`, `style`, `template`, `noscript`, embedded objects, forms, and other non-document content.
 4. Apply every user-supplied `--remove` selector.
