@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "bundler"
+require "fileutils"
 require "open3"
+require "tmpdir"
 
 class CLITest < Minitest::Test
   def run_cli(*argv, stdin: "", pandoc: Sentei::Pandoc.new)
