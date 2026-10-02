@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stand-in for a Pandoc that rejects its input and echoes it to stderr.
+[ "$1" = "--version" ] && { echo "pandoc 3.1.3"; exit 0; }
+cat >&2
+exit 64
