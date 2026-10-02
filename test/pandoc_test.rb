@@ -26,6 +26,14 @@ class PandocTest < Minitest::Test
     assert_equal "```\n```\n", Sentei::Pandoc.new.convert("<pre><code></code></pre>")
   end
 
+  def test_fences_unlabelled_code_nested_in_list
+    require_pandoc
+
+    markdown = Sentei::Pandoc.new.convert("<ul><li>item<pre><code>a\nb</code></pre></li></ul>")
+
+    assert_match(/^ +```\n +a\n +b\n +```$/, markdown)
+  end
+
   def test_missing_executable_is_a_dependency_error
     pandoc = Sentei::Pandoc.new(executable: support_path("no-such-pandoc"))
 
@@ -40,5 +48,13 @@ class PandocTest < Minitest::Test
     error = assert_raises(Sentei::ConversionError) { pandoc.convert("<p>confidential text</p>") }
 
     assert_equal "pandoc failed with exit status 64", error.message
+  end
+
+  def test_signal_termination_reports_signal
+    pandoc = Sentei::Pandoc.new(executable: support_path("fake_pandoc_signal"))
+
+    error = assert_raises(Sentei::ConversionError) { pandoc.convert("<p>x</p>") }
+
+    assert_equal "pandoc was terminated by signal 9", error.message
   end
 end

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stands in for Pandoc when it is killed by a signal.
+kill -9 $$
