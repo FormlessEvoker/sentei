@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Use Sentei's own pinned gems regardless of the caller's working directory.
+ENV["BUNDLE_GEMFILE"] = File.expand_path("../Gemfile", __dir__)
+begin
+  require "bundler"
+  Bundler.setup(:default)
+rescue LoadError, StandardError
+  # Fall through: a missing Nokogiri is reported as a dependency failure.
+end
+
+require_relative "../lib/sentei"
+
+exit Sentei::CLI.run(
+  ARGV,
+  stdin: $stdin,
+  stdout: $stdout,
+  stderr: $stderr
+)

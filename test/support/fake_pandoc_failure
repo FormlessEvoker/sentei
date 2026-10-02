@@ -1,0 +1,4 @@
+#!/bin/sh
+# Stand-in for a Pandoc that rejects its input and echoes it to stderr.
+cat >&2
+exit 64
