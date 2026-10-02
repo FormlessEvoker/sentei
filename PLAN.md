@@ -312,6 +312,7 @@ The following remain deferred unless real inputs demonstrate a need and expansio
 
 - `main` currently holds the **v0.1.0** prototype: a single-file implementation written ahead of this plan. It is the baseline and is tagged `v0.1.0`. It is not changed during the cairn work.
 - `menhir` is the long-lived integration branch for the planned, cairn-by-cairn implementation. It starts from `main`.
+- **Cairn 0** strips the prototype from `menhir` (code, tests, and dependency files), leaving only the documentation, so Cairn 1 builds the project from the ground up.
 - Each cairn is implemented on its own branch cut from `menhir` and merged back into `menhir` by pull request:
   - `cairn-1-conversion-spine`
   - `cairn-2-safe-input-output`
