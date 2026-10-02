@@ -50,6 +50,14 @@ class PandocTest < Minitest::Test
     assert_equal "pandoc failed with exit status 64", error.message
   end
 
+  def test_old_pandoc_is_a_dependency_error
+    pandoc = Sentei::Pandoc.new(executable: support_path("fake_pandoc_old"))
+
+    error = assert_raises(Sentei::DependencyError) { pandoc.convert("<p>x</p>") }
+
+    assert_equal "Pandoc 2.9.2.1 is too old; Pandoc 2.15 or newer is required", error.message
+  end
+
   def test_signal_termination_reports_signal
     pandoc = Sentei::Pandoc.new(executable: support_path("fake_pandoc_signal"))
 

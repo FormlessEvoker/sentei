@@ -1,0 +1,4 @@
+#!/bin/sh
+# Stands in for a Pandoc older than the supported minimum.
+[ "$1" = "--version" ] && { echo "pandoc 2.9.2.1"; exit 0; }
+exit 99
