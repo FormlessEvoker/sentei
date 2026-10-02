@@ -308,10 +308,27 @@ The following remain deferred unless real inputs demonstrate a need and expansio
 - Sophisticated Markdown rewriting.
 - A supported public Ruby library API.
 
+## Branching and release model
+
+- `main` currently holds the **v0.1.0** prototype: a single-file implementation written ahead of this plan. It is the baseline and is tagged `v0.1.0`. It is not changed during the cairn work.
+- `menhir` is the long-lived integration branch for the planned, cairn-by-cairn implementation. It starts from `main`.
+- Each cairn is implemented on its own branch cut from `menhir` and merged back into `menhir` by pull request:
+  - `cairn-1-conversion-spine`
+  - `cairn-2-safe-input-output`
+  - `cairn-3-deterministic-extraction`
+  - `cairn-4-conservative-cleanup`
+  - `cairn-5-links-diagnostics`
+  - `cairn-6-hardening`
+  - `capstone-menhir-assembly`
+- A cairn branch is merged only when its completion condition is met. Later cairn branches start from the updated `menhir`.
+- Each cairn implements only its own scope. Behavior from the v0.1.0 prototype is reintroduced in the cairn that owns it, not carried over wholesale.
+- The capstone branch carries final integration, documentation, and version assignment. Once `menhir` is fully tested and the capstone is merged into it, `menhir` is merged into `main` and released as **v1.0.0**.
+
 ## Working method
 
 For each cairn:
 
+0. Branch from `menhir` and open the cairn pull request against `menhir`.
 1. Confirm unresolved behavior and scope decisions.
 2. Implement the smallest complete vertical slice.
 3. Add focused automated tests with sanitized fixtures.
