@@ -1,18 +1,34 @@
-# Bundler state and installed gems
+# Ruby and Bundler
+*.rbc
+/.config
 /.bundle/
 /vendor/bundle/
+/InstalledFiles
+/lib/bundler/man/
 
-# Packaged gems and coverage output
+# Build, package, and test output
 *.gem
+/pkg/
 /coverage/
+/spec/reports/
+/spec/examples.txt
+/test/version_tmp/
+/tmp/
+build/
 
-# Temporary files
+# Local environment and tool state
+.env
+.byebug_history
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
+/.rvmrc
+
+# Temporary files and metadata
 *.tmp
 *.temp
 *~
 /.tmp/
-/tmp/
 /test/tmp/
-
-# macOS metadata
 .DS_Store

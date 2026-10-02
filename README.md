@@ -2,10 +2,25 @@
 
 Sentei prunes locally saved web pages and converts their meaningful content into clean GitHub-Flavored Markdown using Nokogiri and Pandoc.
 
-**Status:** Planning / pre-alpha. No implementation is available yet.
+**Status:** Early development.
 
-Sentei is intended to operate locally only: it will process files provided by you without fetching URLs, loading remote assets, or sending content to external services.
+Sentei processes files provided by you locally. It does not fetch URLs, load remote assets, execute embedded content, or send content to external services.
 
-The expected future command is `sentei`. Planned dependencies are Ruby, Nokogiri, and Pandoc.
+## Requirements
 
-Implementation will proceed through small milestones called “cairns.”
+- Ruby 3.2 or newer
+- Pandoc 2.0 or newer
+
+Install the pinned Ruby dependency with `bundle install`. Run the CLI with `bundle exec ruby bin/sentei INPUT`, or invoke `bin/sentei` after installing Nokogiri in the active Ruby environment.
+
+```sh
+bundle exec ruby bin/sentei saved-page.html
+bundle exec ruby bin/sentei --selector 'main article' --output page.md saved-page.html
+cat saved-page.html | bundle exec ruby bin/sentei -
+```
+
+Markdown is written to standard output unless `--output` is provided. Existing output files are never replaced unless `--force` is supplied. `--keep-intermediate` writes cleaned HTML beside the selected Markdown output (or as `sentei.cleaned.html` in the current directory).
+
+See [SPEC.md](SPEC.md) for the complete behavior, security boundaries, and validation requirements.
+
+Run the automated tests with `bundle exec ruby -Itest test/sentei_test.rb`.
