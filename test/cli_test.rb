@@ -112,4 +112,23 @@ class CLITest < Minitest::Test
       assert_equal "Hello\n", stdout
     end
   end
+
+  # bin/sentei resolves its Gemfile relative to itself, so a copy beside an
+  # unsatisfiable Gemfile simulates Bundler failing to load the pinned gems.
+  def test_executable_fails_closed_when_pinned_gems_cannot_load
+    Dir.mktmpdir("sentei bundler") do |dir|
+      FileUtils.mkdir_p(File.join(dir, "bin"))
+      executable = File.join(dir, "bin", "sentei")
+      FileUtils.cp(File.expand_path("../bin/sentei", __dir__), executable)
+      File.write(File.join(dir, "Gemfile"), "source \"https://rubygems.org\"\ngem \"sentei-no-such-gem\"\n")
+
+      # Drop the test run's own Bundler environment (RUBYOPT, BUNDLE_*), which
+      # would otherwise fail before the script gets to run.
+      _, stderr, status = Bundler.with_unbundled_env { Open3.capture3(executable, "-") }
+
+      assert_equal 3, status.exitstatus
+      assert_match(/could not load Sentei's pinned gems/, stderr)
+      assert_match(/sentei-no-such-gem/, stderr)
+    end
+  end
 end

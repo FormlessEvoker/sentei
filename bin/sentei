@@ -6,8 +6,12 @@ ENV["BUNDLE_GEMFILE"] = File.expand_path("../Gemfile", __dir__)
 begin
   require "bundler"
   Bundler.setup(:default)
-rescue LoadError, StandardError
-  # Fall through: a missing Nokogiri is reported as a dependency failure.
+rescue LoadError, StandardError => e
+  # Fail closed: falling through could load an unpinned system Nokogiri.
+  # Bundler's own message says what it could not resolve.
+  warn "sentei: could not load Sentei's pinned gems (#{e.class}): #{e.message}"
+  warn "sentei: run `bundle install` in the Sentei directory"
+  exit 3
 end
 
 require_relative "../lib/sentei"
