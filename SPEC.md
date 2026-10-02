@@ -1,8 +1,8 @@
-# HTML to Markdown Tool Specification
+# Sentei Specification
 
 ## Purpose
 
-`html-to-markdown` converts a locally saved HTML document into clean GitHub-Flavored Markdown. It removes page chrome and non-content markup before invoking Pandoc.
+`sentei` converts a locally saved HTML document into clean GitHub-Flavored Markdown. It removes page chrome and non-content markup before invoking Pandoc.
 
 Primary use case: save or paste authenticated documentation HTML into a local file, then convert it without giving a browser extension or external service access to proprietary content.
 
@@ -19,8 +19,8 @@ Primary use case: save or paste authenticated documentation HTML into a local fi
 ## Command
 
 ```text
-html-to-markdown [options] INPUT
-html-to-markdown [options] -
+sentei [options] INPUT
+sentei [options] -
 ```
 
 `INPUT` is an HTML file. `-` reads HTML from standard input. Markdown is written to standard output unless `--output` is provided.
