@@ -2,7 +2,19 @@
 # frozen_string_literal: true
 
 # Use Sentei's own pinned gems regardless of the caller's working directory.
-ENV["BUNDLE_GEMFILE"] = File.expand_path("../Gemfile", __dir__)
+GEMFILE = File.expand_path("../Gemfile", __dir__)
+
+# Bundler cannot switch Gemfiles once one is active, for example under another
+# project's `bundle exec` or a preloaded RUBYOPT=-rbundler/setup. Start over
+# without the inherited environment so the pinned gems are the ones loaded.
+if defined?(Bundler) && ENV["BUNDLE_GEMFILE"] != GEMFILE && !ENV["SENTEI_UNBUNDLED"]
+  Bundler.with_unbundled_env do
+    ENV["SENTEI_UNBUNDLED"] = "1"
+    exec(RbConfig.ruby, __FILE__, *ARGV)
+  end
+end
+
+ENV["BUNDLE_GEMFILE"] = GEMFILE
 begin
   require "bundler"
   Bundler.setup(:default)

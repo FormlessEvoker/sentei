@@ -134,4 +134,24 @@ class CLITest < Minitest::Test
       assert_match(/sentei-no-such-gem/, stderr)
     end
   end
+
+  # Bundler cannot switch Gemfiles once another is active, so bin/sentei must
+  # shed an inherited environment rather than trust Bundler.setup to replace it.
+  def test_executable_ignores_another_projects_bundle
+    require_pandoc
+
+    Dir.mktmpdir("sentei other") do |dir|
+      File.write(File.join(dir, "Gemfile"), "source \"https://rubygems.org\"\n")
+      File.write(File.join(dir, "page.html"), "<p>Hello</p>")
+      executable = File.expand_path("../bin/sentei", __dir__)
+
+      stdout, stderr, status = Bundler.with_unbundled_env do
+        env = { "BUNDLE_GEMFILE" => File.join(dir, "Gemfile") }
+        Open3.capture3(env, "bundle", "exec", executable, File.join(dir, "page.html"), chdir: dir)
+      end
+
+      assert status.success?, stderr
+      assert_equal "Hello\n", stdout
+    end
+  end
 end
