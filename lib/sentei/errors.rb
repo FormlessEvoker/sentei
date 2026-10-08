@@ -5,7 +5,7 @@ module Sentei
   # include document content.
   class Error < StandardError; end
 
-  # Missing, unreadable, or empty input.
+  # Missing, unreadable, empty, or oversized input.
   class InputError < Error; end
 
   # An invalid CSS selector.

@@ -31,7 +31,7 @@ bin/sentei --output page.md --force saved-page.html
 
 Markdown is written to standard output with ATX headings, fenced code blocks, and unwrapped lines.
 
-Input larger than **10 MiB** is rejected; at most that much is read, so oversized input cannot exhaust memory. Real saved pages are normally far smaller.
+Input larger than **10 MiB** is rejected; reading stops one byte past the limit, so oversized input cannot exhaust memory. Real saved pages are normally far smaller.
 
 With `--output`, Markdown is written to a temporary file in the destination directory and moved into place atomically, so the destination is never left partially written and temporary files are removed on failure. An existing destination is never replaced unless `--force` is given, and the check is race-free: if another process creates the file during conversion, Sentei refuses rather than overwriting it. A symlink at the destination counts as existing, even if its target is missing. The race-free check relies on hard links, so without `--force` the destination must be on a filesystem that supports them (any ordinary macOS or Linux filesystem); otherwise Sentei exits with status 4. Sentei also refuses to replace its own input file. Paths may contain spaces. Nothing is written to standard output when `--output` is used.
 

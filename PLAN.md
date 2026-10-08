@@ -161,7 +161,7 @@ A local HTML document and equivalent standard-input stream both produce expected
 
 ## Cairn 2: Safe input and output
 
-Add bounded input and durable output behavior.
+Add bounded input and atomic output behavior.
 
 ### Scope
 

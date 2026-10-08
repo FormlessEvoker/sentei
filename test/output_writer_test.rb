@@ -164,4 +164,11 @@ class OutputWriterTest < Minitest::Test
 
     assert_raises(Sentei::OutputError) { Sentei::OutputWriter.new(stdout: broken).write("x") }
   end
+
+  def test_closed_stdout_is_an_output_error
+    closed = StringIO.new
+    closed.close
+
+    assert_raises(Sentei::OutputError) { Sentei::OutputWriter.new(stdout: closed).write("x") }
+  end
 end

@@ -40,7 +40,7 @@ module Sentei
 
     def write_stdout(markdown)
       @stdout.write(markdown)
-    rescue SystemCallError
+    rescue SystemCallError, IOError
       raise OutputError, "could not write to standard output"
     end
 

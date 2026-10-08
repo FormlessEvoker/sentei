@@ -10,7 +10,8 @@ class CLITest < Minitest::Test
   def run_cli(*argv, stdin: "", pandoc: Sentei::Pandoc.new)
     stdout = StringIO.new
     stderr = StringIO.new
-    status = Sentei::CLI.run(argv, stdin: StringIO.new(stdin), stdout: stdout, stderr: stderr, pandoc: pandoc)
+    stdin = StringIO.new(stdin) unless stdin.is_a?(IO)
+    status = Sentei::CLI.run(argv, stdin: stdin, stdout: stdout, stderr: stderr, pandoc: pandoc)
     [status, stdout.string, stderr.string]
   end
 
@@ -164,6 +165,41 @@ class CLITest < Minitest::Test
       assert_match(/is the input file/, stderr)
       assert_equal "<p>Hello</p>", File.read(input)
     end
+  end
+
+  def test_force_never_replaces_a_file_redirected_to_standard_input
+    with_tmpdir do |dir|
+      input = File.join(dir, "page.html")
+      File.write(input, "<p>Hello</p>")
+
+      status, _, stderr = File.open(input, "rb") { |io| run_cli("-o", input, "--force", "-", stdin: io) }
+
+      assert_equal 4, status
+      assert_match(/is the input file/, stderr)
+      assert_equal "<p>Hello</p>", File.read(input)
+    end
+  end
+
+  def test_output_is_checked_before_loading_the_parser
+    with_tmpdir do |dir|
+      out = File.join(dir, "page.md")
+      File.write(out, "keep me")
+      original = Sentei::Document.method(:load_parser)
+      redefine_load_parser { raise Sentei::DependencyError, "no parser" }
+
+      status, = run_cli("-o", out, fixture_path("basic.html"))
+
+      assert_equal 4, status
+    ensure
+      redefine_load_parser(&original)
+    end
+  end
+
+  def redefine_load_parser(&body)
+    verbose, $VERBOSE = $VERBOSE, nil
+    Sentei::Document.singleton_class.send(:define_method, :load_parser, &body)
+  ensure
+    $VERBOSE = verbose
   end
 
   def test_output_race_between_check_and_write_does_not_clobber
