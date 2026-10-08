@@ -1,8 +1,8 @@
 # Sentei
 
-Sentei prunes locally saved web pages and converts their meaningful content into clean GitHub-Flavored Markdown using Nokogiri and Pandoc.
+Sentei prunes locally saved web pages and converts what remains into clean GitHub-Flavored Markdown using Nokogiri and Pandoc.
 
-**Status:** Cairn 2, safe input and output. Sentei converts the complete `<body>` of a local HTML document to Markdown, with bounded input and atomic, no-clobber file output. Extraction, cleanup, and the remaining options arrive in later cairns (see [PLAN.md](PLAN.md)). The v0.1.0 prototype remains available on `main` and as the `v0.1.0` tag.
+**Status:** Cairn 2, safe input and output. Sentei converts the complete `<body>` of a local HTML document to Markdown, with bounded input and atomic, no-clobber file output. Pruning and the remaining options arrive in later cairns (see [PLAN.md](PLAN.md)). The v0.1.0 prototype remains available on `main` and as the `v0.1.0` tag.
 
 Sentei processes files provided by you locally. It does not fetch URLs, load remote assets, execute embedded content, or send content to external services. Pandoc runs with `--sandbox`, so it cannot read files or access the network either.
 
@@ -50,7 +50,7 @@ Input is read as UTF-8 when it is valid UTF-8; otherwise the encoding declared b
 |---:|---|
 | `0` | Conversion succeeded |
 | `1` | Invalid arguments or input (missing, unreadable, empty, or oversized) |
-| `2` | Extraction produced no usable content (reserved; arrives with extraction in a later cairn) |
+| `2` | No content remained after pruning (reserved; arrives with pruning in a later cairn) |
 | `3` | Nokogiri or Pandoc is unavailable, or Pandoc failed |
 | `4` | Output could not be written safely (existing file without `--force`, missing or unwritable directory, write failure) |
 

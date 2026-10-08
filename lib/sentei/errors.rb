@@ -8,11 +8,11 @@ module Sentei
   # Missing, unreadable, or empty input.
   class InputError < Error; end
 
-  # An invalid CSS selector, or one that matches other than exactly one element.
+  # An invalid CSS selector.
   class SelectorError < Error; end
 
-  # Extraction produced no usable content.
-  class ExtractionError < Error; end
+  # Nothing remained to convert after pruning.
+  class EmptyOutputError < Error; end
 
   # A required runtime dependency (Nokogiri or Pandoc) is unavailable.
   class DependencyError < Error; end

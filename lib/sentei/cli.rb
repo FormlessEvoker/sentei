@@ -40,7 +40,7 @@ module Sentei
       usage_error(stderr, e.message)
     rescue InputError, SelectorError => e
       failure(stderr, e, EXIT_INVALID_INPUT)
-    rescue ExtractionError => e
+    rescue EmptyOutputError => e
       failure(stderr, e, EXIT_NO_CONTENT)
     rescue DependencyError, ConversionError => e
       failure(stderr, e, EXIT_DEPENDENCY_FAILURE)

@@ -229,7 +229,7 @@ class CLITest < Minitest::Test
 
   def test_exit_status_mapping
     {
-      Sentei::InputError => 1, Sentei::SelectorError => 1, Sentei::ExtractionError => 2,
+      Sentei::InputError => 1, Sentei::SelectorError => 1, Sentei::EmptyOutputError => 2,
       Sentei::DependencyError => 3, Sentei::ConversionError => 3, Sentei::OutputError => 4
     }.each do |error, expected|
       pandoc = Object.new
