@@ -7,14 +7,17 @@ module Sentei
   module CLI
     EXIT_SUCCESS = 0
     EXIT_INVALID_INPUT = 1
+    EXIT_NO_CONTENT = 2
     EXIT_DEPENDENCY_FAILURE = 3
+    EXIT_OUTPUT_FAILURE = 4
 
     USAGE = <<~TEXT
       Usage: sentei [options] INPUT
              sentei [options] -
 
       Convert a local HTML file (or "-" for standard input) to GitHub-Flavored
-      Markdown on standard output. Sentei never fetches URLs or remote assets.
+      Markdown on standard output, or to a file with --output. Input larger than
+      10 MiB is rejected. Sentei never fetches URLs or remote assets.
     TEXT
 
     def self.run(argv, stdin:, stdout:, stderr:, pandoc: Pandoc.new)
@@ -27,16 +30,22 @@ module Sentei
 
       return usage_error(stderr, "expected exactly one INPUT (use - for standard input)") unless arguments.length == 1
 
-      Application.new(stdin: stdin, stdout: stdout, pandoc: pandoc).run(arguments.first)
+      return usage_error(stderr, "--output requires a non-empty path") if options[:output]&.empty?
+      return usage_error(stderr, "--force requires --output") if options[:force] && !options[:output]
+
+      Application.new(stdin: stdin, stdout: stdout, pandoc: pandoc)
+                 .run(arguments.first, output: options[:output], force: options.fetch(:force, false))
       EXIT_SUCCESS
     rescue OptionParser::ParseError => e
       usage_error(stderr, e.message)
-    rescue InputError => e
-      stderr.puts "sentei: #{e.message}"
-      EXIT_INVALID_INPUT
+    rescue InputError, SelectorError => e
+      failure(stderr, e, EXIT_INVALID_INPUT)
+    rescue EmptyOutputError => e
+      failure(stderr, e, EXIT_NO_CONTENT)
     rescue DependencyError, ConversionError => e
-      stderr.puts "sentei: #{e.message}"
-      EXIT_DEPENDENCY_FAILURE
+      failure(stderr, e, EXIT_DEPENDENCY_FAILURE)
+    rescue OutputError => e
+      failure(stderr, e, EXIT_OUTPUT_FAILURE)
     end
 
     def self.option_parser(options)
@@ -44,11 +53,19 @@ module Sentei
         opts.banner = USAGE
         opts.separator ""
         opts.separator "Options:"
+        opts.on("-o", "--output PATH", "Write Markdown to PATH") { |path| options[:output] = path }
+        opts.on("--force", "Allow replacement of an existing output file") { options[:force] = true }
         opts.on("-h", "--help", "Show help") { options[:help] = true }
         opts.on("-v", "--version", "Show version") { options[:version] = true }
       end
     end
     private_class_method :option_parser
+
+    def self.failure(stderr, error, status)
+      stderr.puts "sentei: #{error.message}"
+      status
+    end
+    private_class_method :failure
 
     def self.usage_error(stderr, message)
       stderr.puts "sentei: #{message}"
