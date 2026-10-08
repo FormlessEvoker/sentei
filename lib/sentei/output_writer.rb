@@ -9,7 +9,8 @@ module Sentei
   # then moved into place, so readers see either the old file or the complete
   # new one, never a partial write. Without force the move is a hard link,
   # which fails if the destination exists, closing the race between checking
-  # for and creating the file.
+  # for and creating the file. Filesystems without hard links are refused
+  # rather than served by a weaker fallback.
   class OutputWriter
     def initialize(stdout:)
       @stdout = stdout
@@ -21,7 +22,7 @@ module Sentei
       return unless path
 
       raise OutputError, "output path is a directory: #{path}" if File.directory?(path)
-      raise OutputError, "output file exists (use --force to replace it): #{path}" if File.exist?(path) && !force
+      raise OutputError, "output file exists (use --force to replace it): #{path}" if occupied?(path) && !force
     end
 
     def write(markdown, path: nil, force: false)
@@ -31,6 +32,11 @@ module Sentei
     end
 
     private
+
+    # A dangling symlink still occupies the name: File.exist? follows it.
+    def occupied?(path)
+      File.exist?(path) || File.symlink?(path)
+    end
 
     def write_stdout(markdown)
       @stdout.write(markdown)
@@ -83,24 +89,7 @@ module Sentei
     rescue Errno::EEXIST
       raise OutputError, "output file exists (use --force to replace it): #{path}"
     rescue Errno::EPERM, Errno::ENOTSUP, Errno::EOPNOTSUPP, NotImplementedError
-      claim_then_rename(temp, path)
-    end
-
-    # Filesystems without hard links: claim the name exclusively, then move
-    # the finished file over the claim.
-    def claim_then_rename(temp, path)
-      begin
-        File.open(path, File::WRONLY | File::CREAT | File::EXCL, 0o666).close
-      rescue Errno::EEXIST
-        raise OutputError, "output file exists (use --force to replace it): #{path}"
-      end
-
-      begin
-        File.rename(temp, path)
-      rescue SystemCallError
-        File.unlink(path)
-        raise
-      end
+      raise OutputError, "output filesystem does not support hard links, which safe output requires: #{path}"
     end
   end
 end

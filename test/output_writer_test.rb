@@ -99,6 +99,13 @@ class OutputWriterTest < Minitest::Test
     @writer.check(nil)
   end
 
+  def test_check_refuses_dangling_symlink_early_unless_forced
+    File.symlink(path("missing-target"), path)
+
+    assert_raises(Sentei::OutputError) { @writer.check(path) }
+    @writer.check(path, force: true)
+  end
+
   def test_rejects_directory_even_with_force
     assert_raises(Sentei::OutputError) { @writer.write("x", path: @dir, force: true) }
     assert_raises(Sentei::OutputError) { @writer.check(@dir, force: true) }
@@ -141,31 +148,10 @@ class OutputWriterTest < Minitest::Test
     assert_empty leftovers
   end
 
-  def test_falls_back_when_hard_links_are_unsupported
+  def test_refuses_filesystem_without_hard_links
     with_file_method(:link, ->(*) { raise Errno::EPERM }) do
-      @writer.write("x\n", path: path)
-    end
-
-    assert_equal "x\n", File.read(path)
-    assert_empty leftovers
-  end
-
-  def test_fallback_still_refuses_existing_file
-    File.write(path, "original")
-
-    with_file_method(:link, ->(*) { raise Errno::EPERM }) do
-      assert_raises(Sentei::OutputError) { @writer.write("x", path: path) }
-    end
-
-    assert_equal "original", File.read(path)
-    assert_empty leftovers
-  end
-
-  def test_fallback_removes_claim_when_rename_fails
-    with_file_method(:link, ->(*) { raise Errno::EPERM }) do
-      with_file_method(:rename, ->(*) { raise Errno::EIO }) do
-        assert_raises(Sentei::OutputError) { @writer.write("x", path: path) }
-      end
+      error = assert_raises(Sentei::OutputError) { @writer.write("x", path: path) }
+      assert_match(/hard links/, error.message)
     end
 
     refute File.exist?(path)

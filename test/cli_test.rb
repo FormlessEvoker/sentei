@@ -124,6 +124,21 @@ class CLITest < Minitest::Test
     end
   end
 
+  def test_output_refuses_dangling_symlink_with_exit_4_and_runs_no_conversion
+    with_tmpdir do |dir|
+      out = File.join(dir, "page.md")
+      File.symlink(File.join(dir, "missing-target"), out)
+      pandoc = Object.new
+      pandoc.define_singleton_method(:convert) { |_| flunk "converted despite occupied output" }
+
+      status, _, stderr = run_cli("-o", out, fixture_path("basic.html"), pandoc: pandoc)
+
+      assert_equal 4, status
+      assert_match(/use --force/, stderr)
+      assert File.symlink?(out)
+    end
+  end
+
   def test_force_replaces_existing_output
     require_pandoc
 
