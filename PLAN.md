@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build Sentei as a small, local Ruby CLI that prunes non-content markup from saved HTML and converts the meaningful document content to GitHub-Flavored Markdown through Pandoc.
+Build Sentei as a small, local Ruby CLI that prunes markup that is never document content from saved HTML and converts everything else to GitHub-Flavored Markdown through Pandoc.
 
 Implementation will proceed through independently useful milestones called **cairns**. The completed tool is the **menhir**; final integration and release work is the **capstone**.
 
@@ -10,7 +10,8 @@ Implementation will proceed through independently useful milestones called **cai
 
 - Keep processing local. Never fetch URLs or referenced assets.
 - Treat all HTML as untrusted input.
-- Prefer deterministic HTML semantics and explicit selectors over heuristics.
+- Remove only what is known not to be content. Never select, rank, or score content.
+- Prune by element type or explicit user selectors, never by heuristics.
 - Keep Nokogiri responsible for parsing and structural cleanup.
 - Keep Pandoc responsible for HTML-to-Markdown conversion.
 - Avoid architecture or behavior added only to support thematic naming.
@@ -62,6 +63,7 @@ This is a target shape, not a requirement to create every file immediately. Each
 - Orchestrate the processing pipeline.
 - Pass dependencies and streams explicitly for testability.
 - Contain no HTML cleanup, Pandoc invocation, or file-writing details.
+- Reject Markdown that is empty after whitespace normalization, without writing output.
 
 ### `Sentei::InputReader`
 
@@ -75,12 +77,10 @@ This is a target shape, not a requirement to create every file immediately. Each
 - Parse HTML with Nokogiri.
 - Remove unsafe and irrelevant elements.
 - Apply explicit removal selectors.
-- Select the content root.
 - Perform conservative markup cleanup.
 - Resolve relative references when a base URL is supplied.
-- Reject extraction without meaningful content.
 
-Initially, `Document` owns this complete transformation. Extract helpers such as `Extractor` or `Cleaner` only if its implementation becomes difficult to understand or test.
+Initially, `Document` owns this complete transformation. Extract helpers such as `Cleaner` only if its implementation becomes difficult to understand or test.
 
 ### `Sentei::Pandoc`
 
@@ -103,7 +103,7 @@ Define a small typed hierarchy sufficient for exit-status mapping:
 - `Sentei::Error`
 - `Sentei::InputError`
 - `Sentei::SelectorError`
-- `Sentei::ExtractionError`
+- `Sentei::EmptyOutputError`
 - `Sentei::DependencyError`
 - `Sentei::ConversionError`
 - `Sentei::OutputError`
@@ -161,7 +161,7 @@ A local HTML document and equivalent standard-input stream both produce expected
 
 ## Cairn 2: Safe input and output
 
-Add bounded input and durable output behavior.
+Add bounded input and atomic output behavior.
 
 ### Scope
 
@@ -178,47 +178,26 @@ Add bounded input and durable output behavior.
 
 Input and output behavior satisfies the specification without modifying source files or silently replacing destination files.
 
-## Cairn 3: Deterministic extraction
+## Cairn 3: Pruning
 
-Extract likely document content without readability-style heuristics.
-
-### Scope
-
-- Add automatic root selection in this preference set:
-  - `main`
-  - `[role="main"]`
-  - `article`
-  - `body` fallback
-- When several candidates exist, choose greatest meaningful text content.
-- Use deterministic document-order tie-breaking.
-- Add `--selector CSS` with exactly-one-match enforcement.
-- Add `--no-extract`.
-- Reject extraction with no meaningful content.
-- Report automatic selection decisions under `--verbose` when available.
-
-### Completion condition
-
-Representative article, main, role-based, and body-fallback fixtures select predictably, while explicit selector errors fail clearly.
-
-## Cairn 4: Conservative cleanup
-
-Prune known non-document content while preserving meaningful structure.
+Remove markup that is never document content while preserving everything else.
 
 ### Scope
 
-- Remove `head`, scripts, styles, templates, noscript content, forms, embedded objects, and navigation.
-- Remove semantically hidden nodes using narrowly defined rules.
-- Add repeatable `--remove CSS`.
+- Remove `head`, scripts, styles, templates, noscript content, embedded objects, forms, and `nav`.
+- Remove obviously hidden elements: the `hidden` attribute (except `hidden="until-found"`) and inline `style` declaring `display: none` or `visibility: hidden`.
+- Add repeatable `--remove CSS`, failing clearly on invalid selectors.
 - Remove comments and presentation-only attributes.
 - Preserve headings, paragraphs, lists, block quotes, links, images, tables, definition lists, horizontal rules, `pre`, and `code`.
-- Preserve meaningful image alternative text.
-- Avoid class-name guessing and computed-style evaluation.
+- Preserve image alternative text.
+- Reject input that converts to empty Markdown with `EmptyOutputError`, naming likely causes without echoing content.
+- Do not select a content root, guess from class names, evaluate stylesheets or computed styles, or treat `aria-hidden` as hidden.
 
 ### Completion condition
 
-Sanitized fixtures lose known chrome and unsafe elements while retaining supported content and code text.
+Sanitized fixtures lose known non-content elements and user-removed elements while retaining all other content, including multiple articles, headers, footers, asides, and code text.
 
-## Cairn 5: Links and diagnostics
+## Cairn 4: Links and diagnostics
 
 Complete the planned controls and operational feedback.
 
@@ -235,7 +214,7 @@ Complete the planned controls and operational feedback.
 
 Relative links resolve deterministically, no network requests occur, and diagnostics reveal decisions without exposing source content.
 
-## Cairn 6: Hardening
+## Cairn 5: Hardening
 
 Exercise security boundaries and difficult inputs.
 
@@ -243,7 +222,7 @@ Exercise security boundaries and difficult inputs.
 
 - Cover malformed, oversized, and non-HTML input.
 - Cover code containing HTML-like text.
-- Cover invalid selectors and ambiguous selector matches.
+- Cover invalid `--remove` selectors.
 - Cover Pandoc absence and conversion failure.
 - Verify source files remain unchanged.
 - Verify tests perform no network access.
@@ -281,10 +260,9 @@ These decisions should be made at the cairn where evidence is available:
 - Maximum accepted input size.
 - Minimum supported Ruby and Pandoc versions.
 - Exact Pandoc writer flags.
-- Exact definition of meaningful text.
-- Treatment of nested or duplicate extraction candidates.
+- Exact elements that count as embedded objects and forms.
 - Narrow list of presentation-only attributes.
-- Narrow definition of hidden content.
+- Exact inline-style patterns that count as obviously hidden.
 - Atomic no-clobber strategy for the supported platforms.
 - Destination and lifecycle of retained intermediate HTML.
 - Whether Markdown needs any post-Pandoc whitespace normalization.
@@ -297,7 +275,8 @@ The following remain deferred unless real inputs demonstrate a need and expansio
 
 - URL fetching or authenticated browsing.
 - Browser integration or JavaScript rendering.
-- Readability-style extraction.
+- Automatic content-root selection or readability-style extraction.
+- `--selector CSS` (convert only one matching element).
 - Computed CSS evaluation.
 - Class-name-based boilerplate guesses.
 - Repeated-layout or repeated-control detection.
@@ -316,10 +295,9 @@ The following remain deferred unless real inputs demonstrate a need and expansio
 - Each cairn is implemented on its own branch cut from `menhir` and merged back into `menhir` by pull request:
   - `cairn-1-conversion-spine`
   - `cairn-2-safe-input-output`
-  - `cairn-3-deterministic-extraction`
-  - `cairn-4-conservative-cleanup`
-  - `cairn-5-links-diagnostics`
-  - `cairn-6-hardening`
+  - `cairn-3-pruning`
+  - `cairn-4-links-diagnostics`
+  - `cairn-5-hardening`
   - `capstone-menhir-assembly`
 - A cairn branch is merged only when its completion condition is met. Later cairn branches start from the updated `menhir`.
 - Each cairn implements only its own scope. Behavior from the v0.1.0 prototype is reintroduced in the cairn that owns it, not carried over wholesale.
