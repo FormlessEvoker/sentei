@@ -60,6 +60,30 @@ class CLITest < Minitest::Test
     assert_equal "sentei: input is empty\n", stderr
   end
 
+  def test_closed_standard_input_exits_1
+    IO.pipe do |input, _writer|
+      input.close
+
+      status, stdout, stderr = run_cli("-", stdin: input)
+
+      assert_equal 1, status
+      assert_empty stdout
+      assert_equal "sentei: standard input could not be read\n", stderr
+    end
+  end
+
+  def test_standard_input_read_failure_exits_1
+    File.open(fixture_path("basic.html"), "rb") do |input|
+      input.define_singleton_method(:read) { |_| raise Errno::EIO, "private details" }
+
+      status, stdout, stderr = run_cli("-", stdin: input)
+
+      assert_equal 1, status
+      assert_empty stdout
+      assert_equal "sentei: standard input could not be read\n", stderr
+    end
+  end
+
   def test_requires_exactly_one_input
     assert_equal 1, run_cli.first
     assert_equal 1, run_cli("a.html", "b.html").first

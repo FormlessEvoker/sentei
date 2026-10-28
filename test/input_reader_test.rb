@@ -18,6 +18,33 @@ class InputReaderTest < Minitest::Test
     assert_equal "<p>hi</p>", reader(StringIO.new("<p>hi</p>")).read("-")
   end
 
+  def test_closed_standard_input_is_an_input_error
+    stdin = StringIO.new
+    stdin.close
+
+    error = assert_raises(Sentei::InputError) { reader(stdin).read("-") }
+
+    assert_equal "standard input could not be read", error.message
+  end
+
+  def test_standard_input_binmode_failure_is_an_input_error
+    stdin = StringIO.new
+    stdin.define_singleton_method(:binmode) { raise IOError, "private details" }
+
+    error = assert_raises(Sentei::InputError) { reader(stdin).read("-") }
+
+    assert_equal "standard input could not be read", error.message
+  end
+
+  def test_standard_input_read_failure_is_an_input_error
+    stdin = StringIO.new
+    stdin.define_singleton_method(:read) { |_| raise Errno::EIO, "private details" }
+
+    error = assert_raises(Sentei::InputError) { reader(stdin).read("-") }
+
+    assert_equal "standard input could not be read", error.message
+  end
+
   def test_rejects_missing_file
     error = assert_raises(Sentei::InputError) { reader.read(fixture_path("missing.html")) }
 

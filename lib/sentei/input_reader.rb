@@ -29,6 +29,8 @@ module Sentei
     def read_stdin
       @stdin.binmode
       read_bounded(@stdin)
+    rescue IOError, SystemCallError
+      raise InputError, "standard input could not be read"
     end
 
     def read_file(path)
